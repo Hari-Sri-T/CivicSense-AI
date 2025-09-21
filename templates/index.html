@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicSense AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: url('https://i.ibb.co/fzMNJfTS/wmremove-transformed.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(8px);
+      z-index: -1;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    @keyframes pulse {
+      0%, 100% { text-shadow: 0 0 5px #E5E7EB, 0 0 10px #E5E7EB, 0 0 15px #E5E7EB; }
+      50% { text-shadow: 0 0 10px #93C5FD, 0 0 20px #93C5FD, 0 0 30px #93C5FD; }
+    }
+    .glow { animation: pulse 4s infinite ease-in-out; }
+    
+
+    #chat-history {
+    max-height: 60vh;   /* keeps it inside screen */
+    overflow-y: auto;   /* enables scrolling */
+    }
+
+    #chat-history::-webkit-scrollbar { width: 8px; }
+    #chat-history::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    #chat-history::-webkit-scrollbar-thumb { background: #60A5FA; border-radius: 10px; }
+    #chat-history::-webkit-scrollbar-thumb:hover { background: #3B82F6; }
+    .chat-bubble-ai { background-color: #374151; color: #D1D5DB; }
+    .chat-bubble-user { background-color: #3B82F6; color: #FFFFFF; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen">
+
+  <div class="container mx-auto max-w-3xl p-4 sm:p-6 w-full">
+    
+    <!-- Header -->
+    <header class="text-center mb-8 glass-panel rounded-2xl p-6">
+      <h1 class="text-4xl font-bold text-gray-200 glow">CivicSense</h1>
+      <p class="text-sm text-gray-400 mt-2">Your personal AI assistant for understanding complex public documents.</p>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="glass-panel rounded-2xl shadow-lg p-6 flex flex-col min-h-[50vh]">
+      
+      <!-- Document Upload Section -->
+      <div id="upload-section" class="flex flex-col justify-center items-center flex-grow">
+        <div class="text-center">
+          <h2 class="text-2xl font-bold mb-4 text-white">Upload a Document</h2>
+          <div class="flex flex-col items-center space-y-4">
+            <label for="file-upload" class="cursor-pointer bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+              Choose File
+            </label>
+            <input id="file-upload" type="file" class="hidden" accept=".pdf,.docx">
+            <span id="file-name" class="text-gray-400 text-sm">No file selected</span>
+            <button id="upload-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 disabled:bg-gray-800 disabled:cursor-not-allowed" disabled>
+              Upload and Process
+            </button>
+            <p id="processing-status" class="text-sky-400 text-sm mt-2 hidden"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Section (Initially Hidden) -->
+      <div id="chat-section" class="hidden flex-1 flex-col h-full">
+        <h2 class="text-xl font-semibold mb-4 text-white" id="chat-header">Ask a Question</h2>
+        
+        <!-- Chat History -->
+        <div id="chat-history" class="flex-grow overflow-y-auto bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-700">
+          <!-- AI Welcome Message -->
+          <div class="flex justify-start mb-4">
+            <div class="chat-bubble-ai p-3 rounded-lg max-w-lg">
+              <p>The document has been processed. I'm ready to answer your questions about it.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Query Input -->
+        <div class="flex items-center mt-auto">
+          <input type="text" id="query-input" class="flex-grow bg-gray-800 border border-gray-600 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-sky-500 text-white" placeholder="Type your question here...">
+          <button id="ask-button" class="bg-sky-500 hover:bg-sky-600 text-white font-bold p-3 rounded-r-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="text-center mt-8 glass-panel rounded-2xl p-4">
+      <img src="https://i.ibb.co/cKpcDWkJ/Screenshot-from-2025-09-21-20-31-32.png" alt="Team HackHedron Logo" class="h-10 mx-auto mb-2">
+      <p class="text-xs text-gray-500">Built by Team HackHedron.</p>
+    </footer>
+  </div>
+
+  <script>
+    const fileUpload = document.getElementById('file-upload');
+    const fileNameSpan = document.getElementById('file-name');
+    const uploadButton = document.getElementById('upload-button');
+    const processingStatus = document.getElementById('processing-status');
+    
+    const uploadSection = document.getElementById('upload-section');
+    const chatSection = document.getElementById('chat-section');
+    const chatHeader = document.getElementById('chat-header');
+    
+    const queryInput = document.getElementById('query-input');
+    const askButton = document.getElementById('ask-button');
+    const chatHistory = document.getElementById('chat-history');
+
+    let selectedFile = null;
+
+    fileUpload.addEventListener('change', (event) => {
+      selectedFile = event.target.files[0];
+      if (selectedFile) {
+        fileNameSpan.textContent = selectedFile.name;
+        uploadButton.disabled = false;
+      } else {
+        fileNameSpan.textContent = 'No file selected';
+        uploadButton.disabled = true;
+      }
+    });
+
+    uploadButton.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      uploadButton.disabled = true;
+      processingStatus.textContent = 'Processing document... This may take a moment.';
+      processingStatus.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          uploadSection.classList.add('hidden');
+          chatSection.classList.remove('hidden');
+          chatSection.classList.add('flex');
+          chatHeader.textContent = `Ask a Question about "${selectedFile.name}"`;
+          queryInput.focus();
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        processingStatus.textContent = `Error: ${error.message}. Please try again.`;
+        processingStatus.classList.remove('text-sky-400');
+        processingStatus.classList.add('text-red-400');
+        uploadButton.disabled = false;
+      }
+    });
+
+    const handleQuery = async () => {
+      const query = queryInput.value.trim();
+      if (!query) return;
+
+      // Display user's message
+      const userMessageDiv = document.createElement('div');
+      userMessageDiv.className = 'flex justify-end mb-4';
+      userMessageDiv.innerHTML = `<div class="chat-bubble-user p-3 rounded-lg max-w-lg"><p>${query}</p></div>`;
+      chatHistory.appendChild(userMessageDiv);
+      
+      queryInput.value = '';
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      // Display typing indicator
+      const typingIndicator = document.createElement('div');
+      typingIndicator.className = 'flex justify-start mb-4 typing-indicator';
+      typingIndicator.innerHTML = `<div class="chat-bubble-ai p-3 rounded-lg max-w-lg"><p class="italic">CivicSense is thinking...</p></div>`;
+      chatHistory.appendChild(typingIndicator);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      try {
+        const response = await fetch('/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query })
+        });
+
+        const result = await response.json();
+        chatHistory.removeChild(typingIndicator); // Remove typing indicator
+
+        if (response.ok) {
+          const aiMessageDiv = document.createElement('div');
+          aiMessageDiv.className = 'flex justify-start mb-4';
+          aiMessageDiv.innerHTML = `<div class="chat-bubble-ai p-3 rounded-lg max-w-lg">
+            <p class="font-semibold">${result.answer}</p>
+            ${result.explanation ? `<p class="text-xs text-gray-400 mt-2">${result.explanation}</p>` : ''}
+          </div>`;
+          chatHistory.appendChild(aiMessageDiv);
+        } else {
+          throw new Error(result.error || 'Failed to get a response.');
+        }
+
+      } catch (error) {
+        console.error('Query error:', error);
+        chatHistory.removeChild(typingIndicator);
+        const errorMessageDiv = document.createElement('div');
+        errorMessageDiv.className = 'flex justify-start mb-4';
+        errorMessageDiv.innerHTML = `<div class="chat-bubble-ai p-3 rounded-lg max-w-lg bg-red-500/50"><p>Sorry, an error occurred: ${error.message}</p></div>`;
+        chatHistory.appendChild(errorMessageDiv);
+      } finally {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+    };
+
+    askButton.addEventListener('click', handleQuery);
+    queryInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleQuery();
+    });
+  </script>
+</body>
+</html>
