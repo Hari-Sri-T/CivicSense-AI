@@ -3,6 +3,7 @@
 CivicSense AI is an intelligent assistant that helps users understand **complex public documents** such as government policies, legal texts, and reports.  
 Upload a document (PDF/DOCX), and CivicSense will process it, chunk the content, embed it locally with MiniLM, and answer your questions using Google’s **Gemini models**.
 
+**Note**: You can try the demo of the model at : https://civicsense-ai.onrender.com/
 ---
 
 ##  Working
