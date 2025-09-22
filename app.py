@@ -5,13 +5,12 @@ from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from huggingface_hub import InferenceClient
 
 # --- Document Processing ---
 import pymupdf
 import docx
 
-# --- Local Embeddings ---
-from sentence_transformers import SentenceTransformer
 
 # --- Google AI Integration (for answering only) ---
 import google.generativeai as genai
@@ -19,6 +18,10 @@ from dotenv import load_dotenv
 
 # --- Setup ---
 load_dotenv()
+
+# --- Initialize Client
+HF_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN")
+hf_client = InferenceClient(token=HF_TOKEN)
 
 # Configure Flask app
 app = Flask(__name__)
@@ -29,10 +32,6 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# --- Load Models ---
-print("Loading MiniLM local embedding model...")
-EMBED_MODEL = SentenceTransformer("./all-MiniLM-L6-v2")
-print("MiniLM loaded successfully.")
 
 # --- In-Memory Storage ---
 document_chunk_store = {}
@@ -83,15 +82,30 @@ def semantic_chunker(structured_parts: list[dict], max_tokens=350, overlap_token
 
 
 # --- 2. AI & RAG CORE LOGIC ---
-def embed_texts_local(texts: list[str]) -> list:
+def embed_texts_hf(texts: list[str]) -> list[list[float]]:
     """
-    Use local MiniLM embeddings.
+    Use Hugging Face Inference API for MiniLM embeddings.
     """
-    try:
-        return EMBED_MODEL.encode(texts, convert_to_numpy=True).tolist()
-    except Exception as e:
-        print(f"Error in local embedding: {e}")
-        return []
+    embeddings = []
+    for t in texts:
+        try:
+            resp = hf_client.feature_extraction(
+                model="sentence-transformers/all-MiniLM-L6-v2",
+                text=t,
+                wait_for_model=True
+            )
+            # If response is token-level (list of lists), average
+            if isinstance(resp, list) and len(resp) > 0 and isinstance(resp[0], list):
+                import numpy as np
+                vec = np.mean(resp, axis=0).tolist()
+            else:
+                vec = resp
+            embeddings.append(vec)
+        except Exception as e:
+            print(f"HF embedding error: {e}")
+            embeddings.append([0.0])  # avoid empty vector
+    return embeddings
+
 
 
 def store_in_memory(chunk_embeddings: list, chunks: list[dict]):
@@ -192,7 +206,7 @@ def upload_file():
             return jsonify({'error': 'No valid text found in document.'}), 400
 
         print("3. Embedding text chunks locally with MiniLM...")
-        chunk_embeddings = embed_texts_local(chunk_texts)
+        chunk_embeddings = embed_texts_hf(chunk_texts)
         if not chunk_embeddings:
             return jsonify({'error': 'Failed to embed chunks.'}), 500
 
@@ -211,7 +225,7 @@ def ask_question():
         return jsonify({'error': 'No query provided'}), 400
 
     print("1. Embedding query locally with MiniLM...")
-    query_embeddings = embed_texts_local([query])
+    query_embeddings = embed_texts_hf([query])
     if not query_embeddings:
         return jsonify({"error": "Failed to get embedding for the query."}), 500
 

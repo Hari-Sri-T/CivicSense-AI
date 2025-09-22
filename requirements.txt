@@ -6,6 +6,5 @@ PyMuPDF
 python-docx
 numpy
 scikit-learn
-sentence-transformers
-transformers
 google-cloud-aiplatform
+huggingface-hub
